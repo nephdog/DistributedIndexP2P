@@ -1,0 +1,31 @@
+{
+  "name": "distributed-index-p2p",
+  "version": "1.0.0",
+  "description": "Distributed Index P2P",
+  "main": "index.js",
+  "scripts": {
+    "start:registration-server": "node ./registration-server/app.js",
+    "start:peer": "node ./peer/app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nephdog/DistributedIndexP2P.git"
+  },
+  "keywords": [
+    "P2P",
+    "Distributed",
+    "Index"
+  ],
+  "author": "Nephi Grant",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nephdog/DistributedIndexP2P/issues"
+  },
+  "homepage": "https://github.com/nephdog/DistributedIndexP2P#readme",
+  "dependencies": {
+    "request": "^2.83.0",
+    "request-promise": "^4.2.2",
+    "restify": "^6.0.1",
+    "uuid": "^3.1.0"
+  }
+}
