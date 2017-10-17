@@ -7,7 +7,7 @@ const json = true;
 
 const RegisterPeer = () => {
   const url = `${hostname}/peer/register`;
-  const body = { port: 65402 };
+  const body = { port: 65401 };
   return Request.post({ url, json, timeout, body });
 }
 
@@ -30,6 +30,19 @@ const QueryPeers = (cookie) => {
 }
 
 RegisterPeer()
+/*
+.then((response) => {
+  const cookie = JSON.parse(response).data.cookie;
+  return LeavePeer(cookie);
+})*/
+
+/*
+.then((response) => {
+  const cookie = JSON.parse(response).data.cookie;
+  return KeepAlivePeer(cookie);
+})
+*/
+
 .then((response) => {
   const cookie = JSON.parse(response).data.cookie;
   return QueryPeers(cookie);

@@ -1,14 +1,14 @@
 const Restify = require('restify');
-const Endpoints = require('./endpoints');
-const Peers = require('./peers');
+const Routes = require('../common/routes');
+const PeerRequests = require('./peer-requests');
 
 const port = 65423;
 const server = Restify.createServer();
 server.use(Restify.plugins.bodyParser({ mapParams: false }));
-server.post(Endpoints.Register, Peers.Register);
-server.post(Endpoints.Leave, Peers.Leave);
-server.get(Endpoints.PQuery, Peers.PQuery);
-server.post(Endpoints.KeepAlive, Peers.KeepAlive);
+server.post(Routes.Register, PeerRequests.Register);
+server.post(Routes.Leave, PeerRequests.Leave);
+server.get(Routes.PQuery, PeerRequests.PQuery);
+server.post(Routes.KeepAlive, PeerRequests.KeepAlive);
 server.listen(port, () => {
   console.log(`Registration Server listening on port ${port}`);
 });
