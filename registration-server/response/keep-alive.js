@@ -1,6 +1,6 @@
 const Response = require('../../common/response');
 
-module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, errorMsg) => {
+module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, ttl, errorMsg) => {
   const cookie = req.body.cookie;
   if(!registeredPeers[cookie]) {
     return {
@@ -10,7 +10,7 @@ module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, error
   }
   else {
     registeredPeers[cookie].isActive = true;
-    registeredPeers[cookie].ttl = 7200;
+    registeredPeers[cookie].ttl = ttl;
     return {
       status: 200,
       payload: Response.success()

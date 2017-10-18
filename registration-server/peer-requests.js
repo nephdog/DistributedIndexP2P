@@ -4,6 +4,7 @@ const leave = require('./response/leave');
 const keepAlive = require('./response/keep-alive');
 const query = require('./response/query');
 
+const ttl = 7200;
 let registeredPeers = {};
 let peerHistory = {};
 let ttlTimestamp = new Date().getTime();
@@ -39,7 +40,6 @@ const HandleRequest = (req, res, next, handler, errorMsg) => {
       status = result.status;
     }
     catch(error) {
-      console.log(error);
       status = 400;
       payload = Response.error(400, errorMsg);
     }
@@ -52,15 +52,15 @@ const HandleRequest = (req, res, next, handler, errorMsg) => {
 
 module.exports = {
   Register: (req, res, next) => {
-    HandleRequest(req, res, next, register, 'Invalid request body, expected valid port within range: 65400 - 65500');
+    HandleRequest(req, res, next, register, ttl, 'Invalid request body, expected valid port within range: 65400 - 65500');
   },
   Leave: (req, res, next) => {
-    HandleRequest(req, res, next, leave, 'Invalid request body, expected valid registered cookie');
+    HandleRequest(req, res, next, leave, ttl, 'Invalid request body, expected valid registered cookie');
   },
   PQuery: (req, res, next) => {
-    HandleRequest(req, res, next, query, 'Invalid request body, expected valid registered cookie');
+    HandleRequest(req, res, next, query, ttl, 'Invalid request body, expected valid registered cookie');
   },
   KeepAlive: (req, res, next) => {
-    HandleRequest(req, res, next, keepAlive, 'Invalid request body, expected valid registered cookie');
+    HandleRequest(req, res, next, keepAlive, ttl, 'Invalid request body, expected valid registered cookie');
   }
 };

@@ -1,6 +1,6 @@
 const Response = require('../../common/response');
 
-module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, errorMsg) => {
+module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, ttl, errorMsg) => {
   const cookie = req.body.cookie;
   if(!registeredPeers[cookie]) {
     return {

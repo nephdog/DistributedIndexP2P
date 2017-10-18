@@ -7,7 +7,7 @@ const json = true;
 
 const RegisterPeer = () => {
   const url = `${hostname}/peer/register`;
-  const body = { port: 65401 };
+  const body = { port: 65400 };
   return Request.post({ url, json, timeout, body });
 }
 

@@ -19,7 +19,7 @@ const CalculateTimesRegistered = (peerId, currentTime, peerHistory) => {
   }
 };
 
-module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, errorMsg) => {
+module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, ttl, errorMsg) => {
   const port = Number(req.body.port);
   if(isNaN(port) || port < 65400 || port > 65500) {
     return {
@@ -41,7 +41,7 @@ module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, error
     if(peer) {
       cookie = peer.cookie;
       peer.isActive = true;
-      peer.ttl = 7200;
+      peer.ttl = ttl;
       peer.port = port;
       peer.timesRegistered = CalculateTimesRegistered(cookie, timestamp, peerHistory) + 1;
       peer.lastRegistered = timestamp;
@@ -53,7 +53,7 @@ module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, error
       registeredPeers[cookie] = {
         isActive: true,
         hostname,
-        ttl: 7200,
+        ttl,
         port,
         timesRegistered: 1,
         lastRegistered: timestamp,
