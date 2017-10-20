@@ -5,11 +5,12 @@ const RegistrationServer = require('../../registration-server/registration-serve
 const Peer = require('../../peer/peer');
 const WriteFile = Promise.promisify(require('fs').writeFile);
 
-const resultsPath = Path.resolve( __dirname, './results');
+const resultsPathCSV = Path.resolve( __dirname, './results/csv');
+const resultsPathHTML = Path.resolve( __dirname, './results/html');
 Shell.rm('-rf', Path.resolve( __dirname, './downloads'));
-Shell.rm('-rf', resultsPath);
-Shell.mkdir('-p', resultsPath);
-
+Shell.rm('-rf', Path.resolve( __dirname, './results'));
+Shell.mkdir('-p', resultsPathCSV);
+Shell.mkdir('-p', resultsPathHTML);
 
 let files = [];
 for(let i=1; i <= 60; i++) {
@@ -48,13 +49,38 @@ const RequestFilesRecursively = (rfcNumber, peer, startTime, finishTimes) => {
   }
 }
 
-const SaveResults = (times, peerNumber) => {
-  const file = Path.join(resultsPath, `results-peer${peerNumber}.csv`);
-  const csv = [['RFC Number', 'Cumulative Download Time']].concat(times.map((time, rfcNumber) => {
+const SaveIndividualResults = (times, peerNumber) => {
+  const file = Path.join(resultsPathCSV, `results-peer${peerNumber}.csv`);
+  const csv = [['Number of RFCs', 'Cumulative Download Time(milliseconds)']].concat(times.map((time, rfcNumber) => {
     return [rfcNumber + 1, time];
   })).join('\n');
-  return WriteFile(file, csv);
+  return WriteFile(file, csv)
+  .then(() => {
+    const htmlFile = Path.join(resultsPathHTML, `results-peer${peerNumber}.html`);
+    Shell.exec(`cat ${file} | chart-csv > ${htmlFile}`);
+  })
 };
+
+const SaveCumulativeResults = (times) => {
+  const file = Path.join(resultsPathCSV, 'results-all.csv');
+  const csvHeaders = [['Number of RFCs', 'Peer1 CDT(milliseconds)', 'Peer2 CDT(milliseconds)', 'Peer3 CDT(milliseconds)', 'Peer4 CDT(milliseconds)', 'Peer5 CDT(milliseconds)']];
+  const csvValues = [];
+  for(let i=0; i< times.length; i++) {
+    for(let j=0; j< times[i].length; j++) {
+      if(!csvValues[j]){
+        csvValues[j] = [j+1];
+      }
+      csvValues[j].push(times[i][j]);
+    }
+  }
+  const csv = csvHeaders.concat(csvValues).join('\n');
+  return WriteFile(file, csv)
+  .then(() => {
+    const htmlFile = Path.join(resultsPathHTML, 'results-all.html');
+    Shell.exec(`cat ${file} | chart-csv > ${htmlFile}`);
+  })
+};
+
 
 RegistrationServer.Start()
 .then(() => {
@@ -79,8 +105,10 @@ RegistrationServer.Start()
 })
 .then((times) => {
   return Promise.all(times.map((time, index) => {
-    return SaveResults(time, index+1);
-  }));
+    return SaveIndividualResults(time, index+1);
+  }).concat([
+    SaveCumulativeResults(times)
+  ]));
 })
 .then(() => {
   process.exit();

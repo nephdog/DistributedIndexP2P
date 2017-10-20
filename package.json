@@ -25,6 +25,7 @@
   "homepage": "https://github.com/nephdog/DistributedIndexP2P#readme",
   "dependencies": {
     "bluebird": "^3.5.1",
+    "chart-csv": "^1.0.3",
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
     "restify": "^6.0.1",
