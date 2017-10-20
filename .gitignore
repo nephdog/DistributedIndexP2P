@@ -1,3 +1,4 @@
 .DS_STORE
 node_modules
-tasks/*/files
+scenarios/*/downloads
+scenarios/*/results

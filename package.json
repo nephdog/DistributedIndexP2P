@@ -4,8 +4,9 @@
   "description": "Distributed Index P2P",
   "main": "index.js",
   "scripts": {
-    "task1": "node ./tasks/task1/task1.js",
-    "task2": "node ./tasks/task2/task2.js"
+    "scenario:centralized": "node ./scenarios/centralized-file-distribution/centralized-file-distribution.js",
+    "scenario:p2p": "node ./scenarios/p2p-file-distribution/p2p-file-distribution.js",
+    "scenario:test": "node ./scenarios/testing-scenario/testing-scenario.js"
   },
   "repository": {
     "type": "git",
@@ -27,6 +28,7 @@
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
     "restify": "^6.0.1",
+    "shelljs": "^0.7.8",
     "uuid": "^3.1.0"
   }
 }

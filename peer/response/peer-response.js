@@ -11,20 +11,20 @@ const HandleRequest = (req, res, next, handler, checkJSON, index, files, errorMs
   else {
     let payload;
     let status;
-    try {
-      const result = handler(req, res, next, index, files, errorMsg);
+    handler(req, res, next, index, files)
+    .then((result) => {
       payload = result.payload;
       status = result.status;
-    }
-    catch(error) {
+    })
+    .catch((error) => {
       console.log(error);
       status = 400;
       payload = Response.error(400, errorMsg);
-    }
-    finally {
+    })
+    .then(() => {
       res.send(status, payload);
       next();
-    }
+    });
   }
 };
 

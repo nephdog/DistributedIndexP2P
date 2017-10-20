@@ -7,7 +7,7 @@ module.exports = {
     return SendRequest(Request.get, `${hostname}${Routes.RFCQuery}`);
   },
 
-  GetRFC: (hostname, file) => {
-    return SendRequest(Request.get, `${hostname}${Routes.GetRFC}`, { file });
+  GetRFC: (hostname, rfcNumber) => {
+    return SendRequest(Request.get, `${hostname}${Routes.GetRFC}`, { rfcNumber });
   }
 }

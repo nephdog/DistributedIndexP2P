@@ -1,10 +1,13 @@
 const Promise = require('bluebird');
 const Restify = require('restify');
-
+const Path = require('path');
+const WriteFile = Promise.promisify(require('fs').writeFile);
+const MakeDir = require('shelljs').mkdir;
 const RegistrationServer = require('./request/registration-server');
 const PeerRequest = require('./request/peer-request');
 const Routes = require('./routes');
 const PeerResponse = require('./response/peer-response');
+
 
 const ttl = 7200;
 const address = '127.0.0.1';
@@ -18,16 +21,17 @@ module.exports = class {
     this.files = {};
     if(fileInfo.inputPath && fileInfo.files) {
       fileInfo.files.forEach((file) => {
-        this.index[file.rfcNumber] = {
+        this.index[file.rfcNumber] = [{
           rfcNumber: file.rfcNumber,
           title: file.title,
           ttl,
-          hostnames: [this.hostname]
-        }
+          hostname: this.hostname
+        }];
+
         this.files[file.rfcNumber] = {
           path: fileInfo.inputPath,
           name: file.title
-        }
+        };
       });
     }
     this.port = port;
@@ -42,16 +46,35 @@ module.exports = class {
 
   DecrementTTL() {
     const timestamp =  new Date().getTime();
-    const ellapsed = (this.lastSync - timestamp) * 0.001;
+    const ellapsed = (timestamp - this.lastSync) * 0.001;
+    const removeRFCs = [];
     Object.keys(this.index).forEach((rfcNumber) => {
       if(!this.files[rfcNumber]) {
-        this.index[rfcNumber].ttl = this.index[rfcNumber].ttl - ellapsed;
+        const validRecords = [];
+        this.index[rfcNumber].forEach((rfcRecord) => {
+          rfcRecord.ttl = rfcRecord.ttl - ellapsed;
+          if(rfcRecord.ttl > 0) {
+            validRecords.push(rfcRecord);
+          }
+        });
+        if(validRecords.length > 0) {
+          this.index[rfcNumber] = validRecords;
+        }
+        else {
+          removeRFCs.push(rfcNumber);
+        }
       }
+    });
+    removeRFCs.forEach((rfcNumber)=> {
+      delete this.index[rfcNumber];
     });
     this.lastSync = timestamp;
   }
 
   Initialize() {
+    if(this.outputPath) {
+      MakeDir('-p', this.outputPath);
+    }
     return Promise.all([
       this.StartServer(),
       this.Register()
@@ -78,7 +101,7 @@ module.exports = class {
 
   OnGetRFC(req, res, next) {
     this.DecrementTTL();
-    return  PeerResponse.RFCQuery(req, res, next, this.index, this.files);
+    return  PeerResponse.GetRFC(req, res, next, this.index, this.files);
   }
 
   Register() {
@@ -108,20 +131,48 @@ module.exports = class {
     .then((response) => {
       Object.keys(response.data.index).forEach((rfcNumber) => {
         if(!this.index[rfcNumber]) {
-          this.index[rfcNumber] = response.data.index[rfcNumber];
+          this.index[rfcNumber] =response.data.index[rfcNumber];
         }
         else {
-          response.data.index[rfcNumber].hostnames.forEach((hostname) => {
-            if(this.index[rfcNumber].hostnames.indexOf(hostname) == -1) {
-              this.index[rfcNumber].hostnames.push(hostname);
+          let records = [];
+          for(let i=0; i < response.data.index[rfcNumber].length; i++) {
+            const responseRecord = response.data.index[rfcNumber][i];
+            let foundMatch = false;
+            for(let j=0; j < this.index[rfcNumber].length; j++) {
+              let indexRecord = this.index[rfcNumber][j];
+              if(indexRecord.hostname === responseRecord.hostname) {
+                indexRecord.ttl = indexRecord.ttl > responseRecord.ttl ? indexRecord.ttl : responseRecord.ttl;
+                foundMatch = true;
+                break;
+              }
             }
-          })
+            if(!foundMatch) {
+              records.push(responseRecord);
+            }
+          }
+          this.index[rfcNumber] = this.index[rfcNumber].concat(records);
         }
       });
     });
   }
 
-  GetRFC(hostname, file) {
-
+  GetRFC(hostname, rfcNumber) {
+    return PeerRequest.GetRFC(hostname, rfcNumber)
+    .then((response) => {
+      const fileData = response.data.filename;
+      return WriteFile(Path.join(this.outputPath, response.data.filename), response.data.content)
+      .then(() => {
+        this.files[rfcNumber] = {
+          path: this.outputPath,
+          name: response.data.filename
+        };
+        this.index[rfcNumber].push({
+          rfcNumber,
+          title: response.data.filename,
+          ttl,
+          hostname: this.hostname
+        });
+      })
+    });
   }
 }
