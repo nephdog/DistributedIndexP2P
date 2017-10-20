@@ -4,8 +4,8 @@
   "description": "Distributed Index P2P",
   "main": "index.js",
   "scripts": {
-    "start:registration-server": "node ./registration-server/app.js",
-    "start:peer": "node ./peer/app.js"
+    "task1": "node ./tasks/task1/task1.js",
+    "task2": "node ./tasks/task2/task2.js"
   },
   "repository": {
     "type": "git",
@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/nephdog/DistributedIndexP2P#readme",
   "dependencies": {
+    "bluebird": "^3.5.1",
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
     "restify": "^6.0.1",

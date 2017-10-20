@@ -23,12 +23,12 @@ module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, ttl, 
     };
   }
   else {
-    const activePeers = GetActivePeers(cookie, registeredPeers);
+    const peers = GetActivePeers(cookie, registeredPeers);
     registeredPeers[cookie].isActive = true;
     registeredPeers[cookie].ttl = ttl;
     return {
       status: 200,
-      payload: Response.success(activePeers)
+      payload: Response.success({ peers })
     };
   }
 };
