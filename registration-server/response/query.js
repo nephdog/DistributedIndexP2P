@@ -14,7 +14,11 @@ const GetActivePeers = (peerId, registeredPeers) => {
   return activePeers;
 };
 
-module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, ttl, errorMsg) => {
+module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, ttl, errorMsg, verbose) => {
+  if(verbose) {
+    console.log('\nRegistration Server, request for peer query received:');
+    console.log(req.body);
+  }
   const cookie = JSON.parse(req.body).cookie;
   if(!registeredPeers[cookie]) {
     return {

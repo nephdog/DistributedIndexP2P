@@ -19,7 +19,11 @@ const CalculateTimesRegistered = (peerId, currentTime, peerHistory) => {
   }
 };
 
-module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, ttl, errorMsg) => {
+module.exports = (req, res, next, registeredPeers, peerHistory, timestamp, ttl, errorMsg, verbose) => {
+  if(verbose) {
+    console.log('\nRegistration Server, request to register received:');
+    console.log(JSON.stringify(req.body));
+  }
   const port = Number(req.body.port);
   if(isNaN(port) || port < 65400 || port > 65500) {
     return {

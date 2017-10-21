@@ -3,7 +3,7 @@ const Path = require('path');
 const Shell = require('shelljs');
 const RegistrationServer = require('../../registration-server/registration-server');
 const Peer = require('../../peer/peer');
-const WriteFile = Promise.promisify(require('fs').writeFile);
+const SaveResults = require('../save-results.js');
 
 const resultsPathCSV = Path.resolve( __dirname, './results/csv');
 const resultsPathHTML = Path.resolve( __dirname, './results/html');
@@ -49,39 +49,6 @@ const RequestFilesRecursively = (rfcNumber, peer, startTime, finishTimes) => {
   }
 }
 
-const SaveIndividualResults = (times, peerNumber) => {
-  const file = Path.join(resultsPathCSV, `results-peer${peerNumber}.csv`);
-  const csv = [['Number of RFCs', 'Cumulative Download Time(milliseconds)']].concat(times.map((time, rfcNumber) => {
-    return [rfcNumber + 1, time];
-  })).join('\n');
-  return WriteFile(file, csv)
-  .then(() => {
-    const htmlFile = Path.join(resultsPathHTML, `results-peer${peerNumber}.html`);
-    Shell.exec(`cat ${file} | chart-csv > ${htmlFile}`);
-  })
-};
-
-const SaveCumulativeResults = (times) => {
-  const file = Path.join(resultsPathCSV, 'results-all.csv');
-  const csvHeaders = [['Number of RFCs', 'Peer1 CDT(milliseconds)', 'Peer2 CDT(milliseconds)', 'Peer3 CDT(milliseconds)', 'Peer4 CDT(milliseconds)', 'Peer5 CDT(milliseconds)']];
-  const csvValues = [];
-  for(let i=0; i< times.length; i++) {
-    for(let j=0; j< times[i].length; j++) {
-      if(!csvValues[j]){
-        csvValues[j] = [j+1];
-      }
-      csvValues[j].push(times[i][j]);
-    }
-  }
-  const csv = csvHeaders.concat(csvValues).join('\n');
-  return WriteFile(file, csv)
-  .then(() => {
-    const htmlFile = Path.join(resultsPathHTML, 'results-all.html');
-    Shell.exec(`cat ${file} | chart-csv > ${htmlFile}`);
-  })
-};
-
-
 RegistrationServer.Start()
 .then(() => {
   return Promise.all(peers.map((peer) => {
@@ -100,15 +67,11 @@ RegistrationServer.Start()
 })
 .then(() => {
   return Promise.all(peerSubset.map((peer) => {
-    return RequestFilesRecursively(1, peer, new Date().getTime());
+    return RequestFilesRecursively(1, peer, new Date().getTime(), []);
   }))
 })
 .then((times) => {
-  return Promise.all(times.map((time, index) => {
-    return SaveIndividualResults(time, index+1);
-  }).concat([
-    SaveCumulativeResults(times)
-  ]));
+  return SaveResults(times, resultsPathCSV, resultsPathHTML, 1);
 })
 .then(() => {
   process.exit();

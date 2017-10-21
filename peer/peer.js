@@ -8,12 +8,12 @@ const PeerRequest = require('./request/peer-request');
 const Routes = require('./routes');
 const PeerResponse = require('./response/peer-response');
 
-
 const ttl = 7200;
 const address = '127.0.0.1';
 
 module.exports = class {
-  constructor(port, fileInfo) {
+  constructor(port, fileInfo, verbose) {
+    this.verbose = verbose;
     this.outputPath = fileInfo.outputPath;
     this.inputPath = fileInfo.inputPath;
     this.hostname = `http://${address}:${port}`;
@@ -88,46 +88,59 @@ module.exports = class {
     this.server.get(Routes.GetRFC, this.OnGetRFC);
     return new Promise((resolve, reject) => {
       this.server.listen(this.port, address, ()=> {
+        if(this.verbose) {
           console.log(`Peer listening on port ${this.port}`);
-          resolve();
+        }
+        resolve();
+      });
+    });
+  }
+
+  StopServer() {
+    return new Promise((resolve, reject) => {
+      this.server.close(() => {
+        if(this.verbose) {
+          console.log(`Peer closed on port ${this.port}`);
+        }
+        resolve();
       });
     });
   }
 
   OnRFCQuery(req, res, next) {
     this.DecrementTTL();
-    return PeerResponse.RFCQuery(req, res, next, this.index, this.files);
+    return PeerResponse.RFCQuery(req, res, next, this.index, this.files, this.verbose);
   }
 
   OnGetRFC(req, res, next) {
     this.DecrementTTL();
-    return  PeerResponse.GetRFC(req, res, next, this.index, this.files);
+    return  PeerResponse.GetRFC(req, res, next, this.index, this.files, this.verbose);
   }
 
   Register() {
-    return RegistrationServer.Register(this.port)
+    return RegistrationServer.Register(this.port, this.verbose)
     .then((response) => {
       this.cookie = response.data.cookie;
     })
   }
 
   KeepAlive() {
-    return RegistrationServer.KeepAlive(this.cookie)
+    return RegistrationServer.KeepAlive(this.cookie, this.verbose)
   }
 
   Leave() {
-    return RegistrationServer.Leave(this.cookie)
+    return RegistrationServer.Leave(this.cookie, this.verbose)
   }
 
   PQuery() {
-    return RegistrationServer.PQuery(this.cookie)
+    return RegistrationServer.PQuery(this.cookie, this.verbose)
     .then((response) => {
       this.peers = response.data.peers;
     });
   }
 
   RFCQuery(hostname) {
-    return PeerRequest.RFCQuery(hostname)
+    return PeerRequest.RFCQuery(hostname, this.verbose)
     .then((response) => {
       Object.keys(response.data.index).forEach((rfcNumber) => {
         if(!this.index[rfcNumber]) {
@@ -157,7 +170,7 @@ module.exports = class {
   }
 
   GetRFC(hostname, rfcNumber) {
-    return PeerRequest.GetRFC(hostname, rfcNumber)
+    return PeerRequest.GetRFC(hostname, rfcNumber, this.verbose)
     .then((response) => {
       const fileData = response.data.filename;
       return WriteFile(Path.join(this.outputPath, response.data.filename), response.data.content)
@@ -174,5 +187,11 @@ module.exports = class {
         });
       })
     });
+  }
+
+  RFCQueryAllPeers() {
+    return Promise.all(this.peers.map((peer) => {
+      return this.RFCQuery(`http://${peer.hostname}:${peer.port}`);
+    }));
   }
 }

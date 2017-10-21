@@ -23,7 +23,7 @@ const DecrementTTL = (currentTime) => {
   ttlTimestamp = currentTime;
 };
 
-const HandleRequest = (req, res, next, handler, errorMsg) => {
+const HandleRequest = (req, res, next, handler, errorMsg, verbose) => {
   const timestamp = new Date().getTime();
   DecrementTTL(timestamp);
   const contentType = req.contentType();
@@ -35,7 +35,7 @@ const HandleRequest = (req, res, next, handler, errorMsg) => {
     let payload;
     let status;
     try {
-      const result = handler(req, res, next, registeredPeers, peerHistory, timestamp, errorMsg);
+      const result = handler(req, res, next, registeredPeers, peerHistory, timestamp, ttl, errorMsg, verbose);
       payload = result.payload;
       status = result.status;
     }
@@ -51,16 +51,16 @@ const HandleRequest = (req, res, next, handler, errorMsg) => {
 };
 
 module.exports = {
-  Register: (req, res, next) => {
-    HandleRequest(req, res, next, register, ttl, 'Invalid request body, expected valid port within range: 65400 - 65500');
+  Register: (req, res, next, verbose) => {
+    HandleRequest(req, res, next, register, 'Invalid request body, expected valid port within range: 65400 - 65500', verbose);
   },
-  Leave: (req, res, next) => {
-    HandleRequest(req, res, next, leave, ttl, 'Invalid request body, expected valid registered cookie');
+  Leave: (req, res, next, verbose) => {
+    HandleRequest(req, res, next, leave, 'Invalid request body, expected valid registered cookie', verbose);
   },
-  PQuery: (req, res, next) => {
-    HandleRequest(req, res, next, query, ttl, 'Invalid request body, expected valid registered cookie');
+  PQuery: (req, res, next, verbose) => {
+    HandleRequest(req, res, next, query, 'Invalid request body, expected valid registered cookie', verbose);
   },
-  KeepAlive: (req, res, next) => {
-    HandleRequest(req, res, next, keepAlive, ttl, 'Invalid request body, expected valid registered cookie');
+  KeepAlive: (req, res, next, verbose) => {
+    HandleRequest(req, res, next, keepAlive, 'Invalid request body, expected valid registered cookie', verbose);
   }
 };

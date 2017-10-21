@@ -4,7 +4,11 @@ const ReadFile = Promise.promisify(require('fs').readFile);
 
 const Response = require('../../common/response');
 
-module.exports = (req, res, next, index, files) => {
+module.exports = (req, res, next, index, files, verbose) => {
+  if(verbose) {
+    console.log('\nPeer, request for GetRFC received:');
+    console.log(JSON.stringify(req.body));
+  }
   const rfcNumber = JSON.parse(req.body).rfcNumber;
   if(!files[rfcNumber]) {
     return Promise.reject(new Error());
