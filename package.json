@@ -4,8 +4,35 @@
   "description": "Distributed Index P2P",
   "main": "index.js",
   "scripts": {
+    "start:registration-server": "node ./scenarios/registration-server.js",
+
+    "start:centralized:peer0": "node ./scenarios/centralized-file-distribution/peer0.js",
+    "start:centralized:peer1": "node ./scenarios/centralized-file-distribution/peer1.js",
+    "start:centralized:peer2": "node ./scenarios/centralized-file-distribution/peer2.js",
+    "start:centralized:peer3": "node ./scenarios/centralized-file-distribution/peer3.js",
+    "start:centralized:peer4": "node ./scenarios/centralized-file-distribution/peer4.js",
+    "start:centralized:peer5": "node ./scenarios/centralized-file-distribution/peer5.js",
+
+    "start:p2p:worst-case:peer0": "node ./scenarios/p2p-file-distribution/worst-case/peer0.js",
+    "start:p2p:worst-case:peer1": "node ./scenarios/p2p-file-distribution/worst-case/peer1.js",
+    "start:p2p:worst-case:peer2": "node ./scenarios/p2p-file-distribution/worst-case/peer2.js",
+    "start:p2p:worst-case:peer3": "node ./scenarios/p2p-file-distribution/worst-case/peer3.js",
+    "start:p2p:worst-case:peer4": "node ./scenarios/p2p-file-distribution/worst-case/peer4.js",
+    "start:p2p:worst-case:peer5": "node ./scenarios/p2p-file-distribution/worst-case/peer5.js",
+
+    "start:p2p:best-case:peer0": "node ./scenarios/p2p-file-distribution/best-case/peer0.js",
+    "start:p2p:best-case:peer1": "node ./scenarios/p2p-file-distribution/best-case/peer1.js",
+    "start:p2p:best-case:peer2": "node ./scenarios/p2p-file-distribution/best-case/peer2.js",
+    "start:p2p:best-case:peer3": "node ./scenarios/p2p-file-distribution/best-case/peer3.js",
+    "start:p2p:best-case:peer4": "node ./scenarios/p2p-file-distribution/best-case/peer4.js",
+    "start:p2p:best-case:peer5": "node ./scenarios/p2p-file-distribution/best-case/peer5.js",
+
     "scenario:centralized": "node ./scenarios/centralized-file-distribution/centralized-file-distribution.js",
-    "scenario:p2p": "node ./scenarios/p2p-file-distribution/p2p-file-distribution.js",
+
+    "scenario:p2p:worst-case": "node ./scenarios/p2p-file-distribution/worst-case/p2p-worst-case.js",
+
+    "scenario:p2p:best-case": "node ./scenarios/p2p-file-distribution/best-case/p2p-best-case.js",
+    
     "scenario:test": "node ./scenarios/testing-scenario/testing-scenario.js"
   },
   "repository": {

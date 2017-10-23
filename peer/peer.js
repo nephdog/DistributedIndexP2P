@@ -1,12 +1,13 @@
 const Promise = require('bluebird');
 const Restify = require('restify');
 const Path = require('path');
+const Shell = require('shelljs');
 const WriteFile = Promise.promisify(require('fs').writeFile);
-const MakeDir = require('shelljs').mkdir;
 const RegistrationServer = require('./request/registration-server');
 const PeerRequest = require('./request/peer-request');
 const Routes = require('./routes');
 const PeerResponse = require('./response/peer-response');
+const CommonRoutes = require('../common/routes');
 
 const ttl = 7200;
 const address = '127.0.0.1';
@@ -14,26 +15,30 @@ const address = '127.0.0.1';
 module.exports = class {
   constructor(port, fileInfo, verbose) {
     this.verbose = verbose;
-    this.outputPath = fileInfo.outputPath;
-    this.inputPath = fileInfo.inputPath;
     this.hostname = `http://${address}:${port}`;
     this.index = {}
     this.files = {};
-    if(fileInfo.inputPath && fileInfo.files) {
-      fileInfo.files.forEach((file) => {
-        this.index[file.rfcNumber] = [{
-          rfcNumber: file.rfcNumber,
-          title: file.title,
-          ttl,
-          hostname: this.hostname
-        }];
+    if(fileInfo) {
+      this.outputPath = fileInfo.outputPath;
+      this.inputPath = fileInfo.inputPath;
+      this.clearOutputDir = fileInfo.clearOutputDir;
+      if(fileInfo.inputPath && fileInfo.files) {
+        fileInfo.files.forEach((file) => {
+          this.index[file.rfcNumber] = [{
+            rfcNumber: file.rfcNumber,
+            title: file.title,
+            ttl,
+            hostname: this.hostname
+          }];
 
-        this.files[file.rfcNumber] = {
-          path: fileInfo.inputPath,
-          name: file.title
-        };
-      });
+          this.files[file.rfcNumber] = {
+            path: fileInfo.inputPath,
+            name: file.title
+          };
+        });
+      }
     }
+
     this.port = port;
     this.cookie = null;
     this.peers = null;
@@ -42,6 +47,9 @@ module.exports = class {
     this.lastSync = new Date().getTime();
     this.OnRFCQuery = this.OnRFCQuery.bind(this);
     this.OnGetRFC = this.OnGetRFC.bind(this);
+    this.OnScenarioCentalized = this.OnScenarioCentalized.bind(this);
+    this.OnScenarioP2PWorst = this.OnScenarioP2PWorst.bind(this);
+    this.OnScenarioP2PBest = this.OnScenarioP2PBest.bind(this);
   }
 
   DecrementTTL() {
@@ -72,8 +80,11 @@ module.exports = class {
   }
 
   Initialize() {
+    if(this.clearOutputDir) {
+      Shell.rm('-rf', this.outputPath);
+    }
     if(this.outputPath) {
-      MakeDir('-p', this.outputPath);
+      Shell.mkdir('-p', this.outputPath);
     }
     return Promise.all([
       this.StartServer(),
@@ -86,6 +97,9 @@ module.exports = class {
     this.server.use(Restify.plugins.bodyParser({ mapParams: false }));
     this.server.get(Routes.RFCQuery, this.OnRFCQuery);
     this.server.get(Routes.GetRFC, this.OnGetRFC);
+    this.server.get(CommonRoutes.ScenarioCentralized, this.OnScenarioCentalized);
+    this.server.get(CommonRoutes.ScenarioP2PWorst, this.OnScenarioP2PWorst);
+    this.server.get(CommonRoutes.ScenarioP2PBest, this.OnScenarioP2PBest);
     return new Promise((resolve, reject) => {
       this.server.listen(this.port, address, ()=> {
         if(this.verbose) {
@@ -114,7 +128,7 @@ module.exports = class {
 
   OnGetRFC(req, res, next) {
     this.DecrementTTL();
-    return  PeerResponse.GetRFC(req, res, next, this.index, this.files, this.verbose);
+    return PeerResponse.GetRFC(req, res, next, this.index, this.files, this.verbose);
   }
 
   Register() {
@@ -193,5 +207,96 @@ module.exports = class {
     return Promise.all(this.peers.map((peer) => {
       return this.RFCQuery(`http://${peer.hostname}:${peer.port}`);
     }));
+  }
+
+  RequestFilesSync(indexList, startTime, finishTimes) {
+    const hostnames = Object.keys(indexList);
+    if(hostnames.length === 0) {
+      return Promise.resolve(finishTimes);
+    }
+    else {
+      const hostname = hostnames[0];
+      const rfc = indexList[hostname].pop();
+      if(indexList[hostname].length === 0) {
+        delete indexList[hostname];
+      }
+      return this.GetRFC(rfc.hostname, rfc.rfcNumber)
+      .then(() => {
+        finishTimes.push(new Date().getTime() - startTime);
+        return this.RequestFilesSync(indexList, startTime, finishTimes);
+      })
+    }
+  }
+
+  IndexByPeer() {
+    const indexByPeer = {};
+    Object.keys(this.index).forEach((rfcNumber) => {
+      const hostname = this.index[rfcNumber][0].hostname;
+      if(hostname !== this.hostname){
+        if(!indexByPeer[hostname]) {
+          indexByPeer[hostname] = [];
+        }
+        indexByPeer[hostname].push(this.index[rfcNumber][0]);
+      }
+    });
+    return indexByPeer;
+  }
+
+  OnScenarioCentalized(req, res, next) {
+    return this.PQuery()
+    .then(() => {
+      return this.RFCQueryAllPeers();
+    })
+    .then(() => {
+      let indexList = this.IndexByPeer();
+      Object.keys(indexList).forEach((hostname) => {
+        indexList[hostname] = indexList[hostname].slice(0,50);
+      });
+      return this.RequestFilesSync(indexList, new Date().getTime(), []);
+    })
+    .then((times) => {
+      res.send(200, JSON.stringify(times));
+    });
+  }
+
+  OnScenarioP2PWorst(req, res, next) {
+    return this.PQuery()
+    .then(() => {
+      return this.RFCQueryAllPeers();
+    })
+    .then(() => {
+      return this.RequestFilesSync(this.IndexByPeer(), new Date().getTime(), []);
+    })
+    .then((times) => {
+      res.send(200, JSON.stringify(times));
+    });
+  }
+
+  OnScenarioP2PBest(req, res, next) {
+    return this.PQuery()
+    .then(() => {
+      return this.RFCQueryAllPeers();
+    })
+    .then(() => {
+      const indexList = this.IndexByPeer();
+      return Promise.all(Object.keys(indexList).map((hostname) => {
+        const index = {};
+        index[hostname] = indexList[hostname];
+        return this.RequestFilesSync(index, new Date().getTime(), []);
+      }))
+      .then((times) => {
+        let allTimes = [];
+        times.forEach((time) => {
+          allTimes = allTimes.concat(time);
+        })
+        allTimes.sort((a,b) => {
+          return a-b;
+        })
+        return allTimes;
+      })
+    })
+    .then((times) => {
+      res.send(200, JSON.stringify(times));
+    });
   }
 }

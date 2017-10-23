@@ -2,3 +2,5 @@
 node_modules
 scenarios/*/downloads
 scenarios/*/results
+scenarios/*/*/downloads
+scenarios/*/*/results
